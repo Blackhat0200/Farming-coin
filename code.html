@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Mining Bot - PiCoin Plus</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .mining-animation {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .referral-level-1 { background-color: #f0fdf4; }
+        .referral-level-2 { background-color: #dcfce7; }
+        .referral-level-3 { background-color: #bbf7d0; }
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="max-w-md mx-auto bg-white min-h-screen">
+        <!-- Header -->
+        <header class="bg-indigo-600 text-white p-4 shadow-md">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold">PiCoin Plus</h1>
+                    <p class="text-indigo-100 text-sm">Mobile Mining Bot</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs">User ID: <span id="user-id" class="font-mono"></span></div>
+                    <div class="text-xs mt-1">Connected: <span class="font-mono">✔️</span></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-4">
+            <!-- Mining Section -->
+            <section class="mb-8">
+                <div class="bg-white rounded-xl shadow-md p-6 text-center">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-800">Mining Balance</h2>
+                            <p class="text-3xl font-bold text-indigo-600" id="balance">0.00</p>
+                            <p class="text-sm text-gray-500">PI</p>
+                        </div>
+                        <img src="https://placehold.co/100x100" alt="3D rendered golden coin with the letter P on it, glowing with light effect" class="w-20 h-20 rounded-full mining-animation border-4 border-yellow-300">
+                    </div>
+                    
+                    <button id="mine-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition duration-300 transform hover:scale-105">
+                        <i class="fas fa-hammer mr-2"></i> Start Mining
+                    </button>
+                    
+                    <div class="mt-4 text-sm text-gray-600">
+                        <div class="flex justify-between">
+                            <span>Mining Rate:</span>
+                            <span id="mining-rate">0.5 PI/hr</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Daily Limit:</span>
+                            <span>12 PI/day</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stats Overview -->
+            <section class="grid grid-cols-3 gap-4 mb-8">
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                    <div class="text-indigo-600 mb-2"><i class="fas fa-users text-2xl"></i></div>
+                    <div class="font-semibold" id="referral-count">0</div>
+                    <div class="text-xs text-gray-500">Referrals</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                    <div class="text-yellow-500 mb-2"><i class="fas fa-coins text-2xl"></i></div>
+                    <div class="font-semibold" id="bonus-earned">0.00</div>
+                    <div class="text-xs text-gray-500">Bonus Earned</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow text-center">
+                    <div class="text-green-500 mb-2"><i class="fas fa-trophy text-2xl"></i></div>
+                    <div class="font-semibold" id="rank">#0</div>
+                    <div class="text-xs text-gray-500">Rank</div>
+                </div>
+            </section>
+
+            <!-- Referral Section -->
+            <section class="mb-8">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800">
+                        <i class="fas fa-user-plus text-indigo-600 mr-2"></i> Referral Program
+                    </h2>
+                    
+                    <div class="bg-indigo-50 p-3 rounded-lg mb-4">
+                        <p class="text-sm font-medium text-indigo-800 mb-2">Your referral link:</p>
+                        <div class="flex">
+                            <input type="text" id="referral-link" class="flex-grow p-2 rounded-l-lg border border-gray-300 text-xs" readonly>
+                            <button onclick="copyReferralLink()" class="bg-indigo-600 text-white px-4 rounded-r-lg">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Share this link to earn 25% from your referrals' mining</p>
+                    </div>
+                    
+                    <!-- Multi-level rewards breakdown -->
+                    <div class="mt-4">
+                        <h3 class="font-medium text-gray-700 mb-2">Multi-Level Rewards</h3>
+                        <div class="space-y-2">
+                            <div class="referral-level-1 p-2 rounded-md flex justify-between">
+                                <span>Level 1 (Direct):</span>
+                                <span class="font-medium">25% bonus</span>
+                            </div>
+                            <div class="referral-level-2 p-2 rounded-md flex justify-between">
+                                <span>Level 2 (Referrals of referrals):</span>
+                                <span class="font-medium">10% bonus</span>
+                            </div>
+                            <div class="referral-level-3 p-2 rounded-md flex justify-between">
+                                <span>Level 3:</span>
+                                <span class="font-medium">5% bonus</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Daily Bonus -->
+            <section class="mb-8">
+                <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl shadow-md p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold mb-1"><i class="fas fa-gift mr-2"></i> Daily Bonus</h2>
+                            <p class="text-sm">Mine every day to get bonus rewards!</p>
+                        </div>
+                        <button id="daily-bonus-btn" class="bg-white text-indigo-600 font-bold py-2 px-4 rounded-full hover:bg-opacity-90">
+                            Claim
+                        </button>
+                    </div>
+                    <div class="mt-4 flex justify-between">
+                        <div class="text-center">
+                            <div class="w-8 h-8 bg-indigo-700 rounded-full flex items-center justify-center mx-auto">1</div>
+                            <div class="text-xs mt-1">Day 1</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-8 h-8 bg-indigo-700 rounded-full flex items-center justify-center mx-auto">2</div>
+                            <div class="text-xs mt-1">Day 2</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-8 h-8 bg-indigo-700 rounded-full flex items-center justify-center mx-auto">3</div>
+                            <div class="text-xs mt-1">Day 3</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-8 h-8 bg-indigo-700 rounded-full flex items-center justify-center mx-auto">4</div>
+                            <div class="text-xs mt-1">Day 4</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-8 h-8 bg-indigo-700 rounded-full flex items-center justify-center mx-auto">5+</div>
+                            <div class="text-xs mt-1">Bonus</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Leaderboard -->
+            <section class="mb-8">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800">
+                        <i class="fas fa-chart-line text-indigo-600 mr-2"></i> Top Miners
+                    </h2>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 border-b">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center mr-3 text-white font-bold">1</div>
+                                <div>
+                                    <div class="font-medium">@cryptomaster</div>
+                                    <div class="text-xs text-gray-500">Ref: 42 users</div>
+                                </div>
+                            </div>
+                            <div class="font-bold text-indigo-600">1,254.75 PI</div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 border-b">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3 text-white font-bold">2</div>
+                                <div>
+                                    <div class="font-medium">@blockchainpro</div>
+                                    <div class="text-xs text-gray-500">Ref: 31 users</div>
+                                </div>
+                            </div>
+                            <div class="font-bold text-indigo-600">987.50 PI</div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 border-b">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-amber-600 rounded-full flex items-center justify-center mr-3 text-white font-bold">3</div>
+                                <div>
+                                    <div class="font-medium">Your Position</div>
+                                    <div class="text-xs text-gray-500" id="your-ref-count">Ref: 0 users</div>
+                                </div>
+                            </div>
+                            <div class="font-bold text-indigo-600" id="your-balance">0.00 PI</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Withdrawal Section -->
+            <section>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800">
+                        <i class="fas fa-wallet text-indigo-600 mr-2"></i> Withdraw
+                    </h2>
+                    <p class="text-sm text-gray-600 mb-4">Minimum withdrawal amount: 100 PI</p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">PI Amount</label>
+                        <input type="number" id="withdraw-amount" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="100">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Wallet Address</label>
+                        <input type="text" id="wallet-address" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter your Pi wallet address">
+                    </div>
+                    
+                    <button id="withdraw-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Request Withdrawal
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-200 flex justify-around py-3">
+            <a href="#" class="text-center text-indigo-600" onclick="showSection('mining')">
+                <i class="fas fa-hammer block text-xl"></i>
+                <span class="text-xs">Mine</span>
+            </a>
+            <a href="#" class="text-center text-gray-500" onclick="showSection('referrals')">
+                <i class="fas fa-users block text-xl"></i>
+                <span class="text-xs">Refer</span>
+            </a>
+            <a href="#" class="text-center text-gray-500" onclick="showSection('leaderboard')">
+                <i class="fas fa-trophy block text-xl"></i>
+                <span class="text-xs">Rank</span>
+            </a>
+            <a href="#" class="text-center text-gray-500" onclick="showSection('wallet')">
+                <i class="fas fa-wallet block text-xl"></i>
+                <span class="text-xs">Wallet</span>
+            </a>
+            <a href="#" class="text-center text-gray-500" onclick="showSection('settings')">
+                <i class="fas fa-cog block text-xl"></i>
+                <span class="text-xs">Settings</span>
+            </a>
+        </nav>
+
+        <!-- Success Modal -->
+        <div id="success-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-xl max-w-sm w-full mx-4">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check-circle text-green-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2" id="modal-title">Success!</h3>
+                    <p class="text-gray-600 mb-4" id="modal-message">Your mining session has started successfully.</p>
+                    <button onclick="closeModal()" class="bg-indigo-600 text-white py-2 px-6 rounded-lg">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Telegram WebApp initialization
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Generate a random user ID if not available from Telegram
+        const userId = tg.initDataUnsafe?.user?.id || Math.floor(100000 + Math.random() * 900000);
+        document.getElementById('user-id').textContent = userId;
+        
+        // App state
+        let state = {
+            balance: 0,
+            isMining: false,
+            miningInterval: null,
+            miningRate: 0.5, // PI per hour
+            referralCount: 0,
+            bonusEarned: 0,
+            rank: 0,
+            lastMined: 0,
+            dailyBonuses: [],
+            referralLink: `https://t.me/PiCoinPlusBot?start=${userId}`
+        };
+        
+        // DOM elements
+        const mineBtn = document.getElementById('mine-btn');
+        const balanceDisplay = document.getElementById('balance');
+        const referralCountDisplay = document.getElementById('referral-count');
+        const bonusEarnedDisplay = document.getElementById('bonus-earned');
+        const rankDisplay = document.getElementById('rank');
+        const referralLinkInput = document.getElementById('referral-link');
+        const dailyBonusBtn = document.getElementById('daily-bonus-btn');
+        const withdrawBtn = document.getElementById('withdraw-btn');
+        const withdrawAmount = document.getElementById('withdraw-amount');
+        const walletAddress = document.getElementById('wallet-address');
+        const yourRefCount = document.getElementById('your-ref-count');
+        const yourBalance = document.getElementById('your-balance');
+        
+        // Initialize the app
+        function initApp() {
+            // Load saved state from localStorage
+            const savedState = localStorage.getItem('piCoinState');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            }
+            
+            // Set up UI with current state
+            updateUI();
+            referralLinkInput.value = state.referralLink;
+            
+            // Check if user can mine again (24h cooldown)
+            if (state.lastMined && (Date.now() - state.lastMined) < 24 * 60 * 60 * 1000) {
+                mineBtn.disabled = true;
+                mineBtn.textContent = 'Come back tomorrow';
+            }
+            
+            // Enable withdrawal button only if balance >= 100 and address is entered
+            withdrawAmount.addEventListener('input', checkWithdrawal);
+            walletAddress.addEventListener('input', checkWithdrawal);
+        }
+        
+        // Update UI with current state
+        function updateUI() {
+            balanceDisplay.textContent = state.balance.toFixed(2);
+            referralCountDisplay.textContent = state.referralCount;
+            bonusEarnedDisplay.textContent = state.bonusEarned.toFixed(2);
+            rankDisplay.textContent = `#${state.rank}`;
+            yourRefCount.textContent = `Ref: ${state.referralCount} users`;
+            yourBalance.textContent = `${state.balance.toFixed(2)} PI`;
+        }
+        
+        // Start/stop mining
+        mineBtn.addEventListener('click', () => {
+            if (state.isMining) {
+                stopMining();
+            } else {
+                startMining();
+            }
+        });
+        
+        // Start mining
+        function startMining() {
+            state.isMining = true;
+            mineBtn.innerHTML = '<i class="fas fa-stop mr-2"></i> Stop Mining';
+            mineBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            mineBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            
+            // Simulate mining by incrementing balance every second
+            state.miningInterval = setInterval(() => {
+                state.balance += state.miningRate / 3600; // Convert hourly rate to per second
+                updateUI();
+                saveState();
+            }, 1000);
+            
+            showSuccess('Mining Started', 'You are now earning PI coins. Keep the app open for best results.');
+        }
+        
+        // Stop mining
+        function stopMining() {
+            state.isMining = false;
+            mineBtn.innerHTML = '<i class="fas fa-hammer mr-2"></i> Start Mining';
+            mineBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            mineBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            
+            clearInterval(state.miningInterval);
+            state.lastMined = Date.now();
+            
+            showSuccess('Mining Stopped', `You've earned ${(state.miningRate / 2).toFixed(2)} PI this session.`);
+            saveState();
+        }
+        
+        // Copy referral link
+        function copyReferralLink() {
+            referralLinkInput.select();
+            document.execCommand('copy');
+            showSuccess('Copied!', 'Your referral link has been copied to clipboard.');
+        }
+        
+        // Claim daily bonus
+        dailyBonusBtn.addEventListener('click', () => {
+            const today = new Date().toDateString();
+            
+            // Check if bonus already claimed today
+            if (state.dailyBonuses.includes(today)) {
+                showSuccess('Already Claimed', 'You have already claimed your daily bonus today.');
+                return;
+            }
+            
+            // Calculate bonus based on streak
+            const streak = state.dailyBonuses.length;
+            let bonus = 0.5;
+            
+            if (streak >= 4) bonus = 5; // 5+ day streak
+            else if (streak >= 2) bonus = 2; // 3-4 day streak
+            
+            // Add bonus
+            state.balance += bonus;
+            state.bonusEarned += bonus;
+            state.dailyBonuses.push(today);
+            
+            // Update UI and show success
+            updateUI();
+            saveState();
+            
+            showSuccess('Bonus Claimed', `You received ${bonus.toFixed(2)} PI as your daily bonus!`);
+            
+            // Update button state
+            dailyBonusBtn.textContent = 'Claimed';
+            dailyBonusBtn.disabled = true;
+        });
+        
+        // Check withdrawal conditions
+        function checkWithdrawal() {
+            const amount = parseFloat(withdrawAmount.value);
+            const address = walletAddress.value.trim();
+            
+            if (amount >= 100 && address.length > 0 && amount <= state.balance) {
+                withdrawBtn.disabled = false;
+            } else {
+                withdrawBtn.disabled = true;
+            }
+        }
+        
+        // Handle withdrawal
+        withdrawBtn.addEventListener('click', () => {
+            const amount = parseFloat(withdrawAmount.value);
+            const address = walletAddress.value.trim();
+            
+            if (amount < 100) {
+                showSuccess('Minimum Amount', 'Minimum withdrawal is 100 PI');
+                return;
+            }
+            
+            if (amount > state.balance) {
+                showSuccess('Insufficient Balance', 'You don\'t have enough PI for this withdrawal');
+                return;
+            }
+            
+            // Process withdrawal (simulated)
+            state.balance -= amount;
+            updateUI();
+            saveState();
+            
+            // In a real app, this would send a request to your backend
+            showSuccess('Withdrawal Request', `${amount.toFixed(2)} PI will be sent to your wallet shortly. Processing may take 24-48 hours.`);
+            
+            // Reset form
+            withdrawAmount.value = '';
+            walletAddress.value = '';
+            withdrawBtn.disabled = true;
+        });
+        
+        // Show success modal
+        function showSuccess(title, message) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('success-modal').classList.remove('hidden');
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('success-modal').classList.add('hidden');
+        }
+        
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('piCoinState', JSON.stringify(state));
+        }
+        
+        // Show different sections (for navigation)
+        function showSection(section) {
+            // In a full implementation, this would show/hide different sections
+            console.log(`Showing section: ${section}`);
+        }
+        
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
